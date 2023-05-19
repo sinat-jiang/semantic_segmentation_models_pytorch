@@ -5,18 +5,16 @@ import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import config
-from fcn import FCN
+from networks.fcn import FCN
 import os
 from tqdm import tqdm
 from dataset import VOCSegDataset
-from fcn import FCN
 from utils import load_checkpoint, save_checkpoint, batch_intersection_union, batch_pix_accuracy, CrossEntropy2d
-
 
 # torch.backends.cudnn.benchmark = False
 
 
-def validation(model, val_dataloader, nClass, device):
+def validation(model, val_dataloader, nClass, device='cpu'):
     """
     validation
     :param model:
@@ -60,8 +58,8 @@ def main():
 
     # 加载数据集
     print('Loading dataset...')
-    train_dataset = VOCSegDataset(config.DATA_PATH, transform_struct=config.transforms_struct, transform_data=config.transforms_data)
-    val_dataset = VOCSegDataset(config.DATA_PATH, transform_struct=config.transforms_struct, transform_data=config.transforms_data, train=False)
+    train_dataset = VOCSegDataset(config.DATA_PATH, train=True, transform_struct=config.transforms_struct, transform_data=config.transforms_data)
+    val_dataset = VOCSegDataset(config.DATA_PATH, train=False, transform_struct=config.transforms_struct, transform_data=config.transforms_data)
     train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS, pin_memory=True)
     val_dataloader = DataLoader(val_dataset, shuffle=False, batch_size=config.BATCH_SIZE, num_workers=0, pin_memory=True)
 
@@ -90,7 +88,7 @@ def main():
         lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=config.LR_STEP_SIZE, gamma=config.LR_GAMMA_SLR)
 
     # 损失函数
-    ce_loss_fun = CrossEntropy2d(nclass=len(config.VOC_CLASSES), ignore_label=255)
+    ce_loss_fun = CrossEntropy2d(nclass=len(config.VOC_CLASSES))
 
     # 加载预训练模型
     if config.INIT_EPOCH > 0:

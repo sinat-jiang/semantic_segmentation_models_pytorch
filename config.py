@@ -2,15 +2,15 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import torch
 
-
+# training params
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-BATCH_SIZE = 2
-LR = 1e-4
+BATCH_SIZE = 5
+LR = 1e-3
 
 INIT_EPOCH = 0
-NUM_EPOCHS = 1000
-EVAL_EPOCH = 5
-SAVE_EPOCH = 5
+NUM_EPOCHS = 36
+EVAL_EPOCH = 2
+SAVE_EPOCH = 2
 
 OPTIMIZER = 'adam'      # adam, sgd, ...
 # adam params
@@ -29,26 +29,27 @@ LR_GAMMA_SLR = 0.1  # 学习率下降步幅
 
 # LOAD_MODEL = False      # 初始训练时指定为 False
 # SAVE_MODEL = True
-BEST_MODEL = './checkpoints/best_epoch_weights.pth'
-LATEST_MODEL = './checkpoints/latest_epoch_weights.pth'
+BEST_MODEL = 'best_epoch_weights.pth'
+LATEST_MODEL = 'latest_epoch_weights.pth'
 NUM_WORKERS = 2
 
-
-DATA_PATH = r'E:\AllDateSets\CV\VOC\VOC2007\VOCtrainval_06-Nov-2007\VOCdevkit\VOC2007'
+# data params
+# DATA_PATH = r'E:\AllDateSets\CV\VOC\VOC2007\VOCtrainval_06-Nov-2007\VOCdevkit\VOC2007'
+DATA_PATH = r'E:\AllDateSets\CV\VOC\VOCtrainval_11-May-2012\VOCdevkit\VOC2012'
 # 标签其标注的类别
 VOC_CLASSES = ['background', 'aeroplane', 'bicycle', 'bird', 'boat',
                'bottle', 'bus', 'car', 'cat', 'chair', 'cow',
                'diningtable', 'dog', 'horse', 'motorbike', 'person',
                'potted plant', 'sheep', 'sofa', 'train', 'tv/monitor']
 
-# 不同颜色映射的标签值与 类别索引 的对应关系，详见：http://host.robots.ox.ac.uk/pascal/VOC/voc2007/segexamples/index.html
-label2trainid = {}  # 映射关系与 VOC_CLASSES 的索引一致
-
-CROP_SIZE = [256, 256]
+# CROP_SIZE = [256, 256]
+CROP_SIZE = [320, 480]  # (h, w)，这里需注意 Image.open() 打开的图片 size 结构默认是 (w, h)，对应时注意顺序
 
 # norm params
-MEAN = [0.5, 0.5, 0.5]
-STD = [0.5, 0.5, 0.5]
+# MEAN = [0.5, 0.5, 0.5]
+# STD = [0.5, 0.5, 0.5]
+MEAN = [0.485, 0.456, 0.406]
+STD = [0.229, 0.224, 0.225]
 
 # 结构 transform
 transforms_struct = A.Compose(

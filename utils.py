@@ -6,7 +6,6 @@ import torch.nn as nn
 
 
 def save_checkpoint(model, optimizer, lr_scheduler, filename='my_checkpoint.pth.tar'):
-    print('==> Saving checkpoint')
     checkpoint = {
         'state_dict': model.state_dict(),
         'optimizer': optimizer.state_dict(),
@@ -15,26 +14,28 @@ def save_checkpoint(model, optimizer, lr_scheduler, filename='my_checkpoint.pth.
     torch.save(checkpoint, filename)
 
 
-def load_checkpoint(checkpoint_file, model, optimizer, lr_scheduler, lr, device='cpu'):
+def load_checkpoint(checkpoint_file, model, optimizer=None, lr_scheduler=None, lr=None, device='cpu', type='train'):
     print('==> Loading checkpoint')
     checkpoint = torch.load(checkpoint_file, map_location=device)
     model.load_state_dict(checkpoint['state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
-    lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+    if type == 'train':
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
 
-    # if wen don't do this then it will just have learning rate of old checkpoint and it will lead to many hours of debugging
-    # for param_group in optimizer.param_group:
-    #     param_group['lr'] = lr
+        # # if wen don't do this then it will just have learning rate of old checkpoint and it will lead to many hours of debugging
+        # for param_group in optimizer.param_group:
+        #     param_group['lr'] = lr
 
-    #
-    print('-' * 90)
-    print('optimizer lr:')
-    for param_group in optimizer.param_group:
-        print(param_group['lr'])
-    print('-' * 90)
+        print('-' * 90)
+        print('optimizer lr:')
+        for param_group in optimizer.param_group:
+            print(param_group['lr'])
+        print('-' * 90)
+
+    # return model
 
 
-def batch_pix_accuracy(output, target, ignore_label=255):
+def batch_pix_accuracy(output, target, ignore_label=None):
     """
     PixAcc
     :param output: (b, c, h, w)
@@ -42,8 +43,8 @@ def batch_pix_accuracy(output, target, ignore_label=255):
     :return:
     """
     # 忽略白边（貌似不手动忽略，而是通过 + 1 的方式巧妙的避免计算也行）
-    # pass
-    target[target == ignore_label] = -1
+    if ignore_label is not None:
+        target[target == ignore_label] = -1
 
     # 加 1 是为了方便计算
     predict = torch.argmax(output, 1) + 1   # (b, channel=class, h, w) -> (b, h, w)
@@ -56,7 +57,7 @@ def batch_pix_accuracy(output, target, ignore_label=255):
     return pixel_correct, pixel_labeled
 
 
-def batch_intersection_union(output, target, nclass, ignore_label=255):
+def batch_intersection_union(output, target, nclass, ignore_label=None):
     """
     mIoU
     :param output:
@@ -66,7 +67,8 @@ def batch_intersection_union(output, target, nclass, ignore_label=255):
     :return:
     """
     # 忽略白边（貌似不手动忽略，而是通过 + 1 的方式巧妙的避免计算也行）
-    target[target == ignore_label] = -1
+    if ignore_label is not None:
+        target[target == ignore_label] = -1
 
     # inputs are numpy array, output 4D, target 3D
     mini = 1
@@ -90,7 +92,7 @@ def batch_intersection_union(output, target, nclass, ignore_label=255):
 
 
 class CrossEntropy2d(nn.Module):
-    def __init__(self, nclass, ignore_label=255):
+    def __init__(self, nclass, ignore_label=None):
         super().__init__()
         self.nclass = nclass
         self.ignore_label = ignore_label
@@ -101,14 +103,17 @@ class CrossEntropy2d(nn.Module):
         :param masks: the masks of the correspond images, [batch, height, width]
         :return: entropy loss
         """
-        # 忽略特定值
-        target_mask = masks != self.ignore_label    # 筛选蒙版，torch.Size([bs, h, w])
-        masks = masks[target_mask]                  # [num_pixels]，筛选后的所有 masks 像素值排成一列
+        if self.ignore_label is not None:
+            # 忽略特定值
+            target_mask = masks != self.ignore_label    # 筛选蒙版，torch.Size([bs, h, w])
+            masks = masks[target_mask]                  # [num_pixels]，筛选后的所有 masks 像素值排成一列
 
-        # 将 target_mask 由 (bs, h, w) -> (bs, nclass, h, w)，其实就是在新增 dim=1 维度上复制 nclass 份，再根据 target_mask 对 preds 的像素进行筛选
-        preds = preds[target_mask.unsqueeze(1).repeat(1, self.nclass, 1, 1)].view(-1, self.nclass)
+            # 将 target_mask 由 (bs, h, w) -> (bs, nclass, h, w)，其实就是在新增 dim=1 维度上复制 nclass 份，再根据 target_mask 对 preds 的像素进行筛选
+            preds = preds[target_mask.unsqueeze(1).repeat(1, self.nclass, 1, 1)].view(-1, self.nclass)
 
+        # CrossEntropyLoss() 会自动的执行 softmax 和 one-hot 转换
         ce_loss = nn.CrossEntropyLoss()(preds, masks)
+
         return ce_loss
 
 
