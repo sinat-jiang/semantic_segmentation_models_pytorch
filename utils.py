@@ -3,9 +3,14 @@
 """
 import torch
 import torch.nn as nn
+import os
 
 
 def save_checkpoint(model, optimizer, lr_scheduler, filename='my_checkpoint.pth.tar'):
+    dir_ = os.path.dirname(filename)
+    if not os.path.exists(dir_):
+        os.makedirs(dir_)
+
     checkpoint = {
         'state_dict': model.state_dict(),
         'optimizer': optimizer.state_dict(),
@@ -15,7 +20,7 @@ def save_checkpoint(model, optimizer, lr_scheduler, filename='my_checkpoint.pth.
 
 
 def load_checkpoint(checkpoint_file, model, optimizer=None, lr_scheduler=None, lr=None, device='cpu', type='train'):
-    print('==> Loading checkpoint')
+    print('==> Loading checkpoint: {}'.format(checkpoint_file))
     checkpoint = torch.load(checkpoint_file, map_location=device)
     model.load_state_dict(checkpoint['state_dict'])
     if type == 'train':
