@@ -11,6 +11,7 @@ from utils import load_checkpoint
 import matplotlib.pyplot as plt
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+import os
 
 
 def evaluation_val(data_path, model, device='cpu'):
@@ -83,9 +84,12 @@ def prediction_single(image_path, model):
         plt.imshow(output)
         plt.show()
 
+        # plt.imsave()
+
+    return output
+
 
 if __name__ == '__main__':
-    image = r'E:\AllDateSets\CV\VOC\VOC2007\VOCtrainval_06-Nov-2007\VOCdevkit\VOC2007\JPEGImages\000033.jpg'
 
     # model = FCN(num_class=21)
     # checkpoint_file = './latest_epoch_weights.pth'
@@ -101,8 +105,9 @@ if __name__ == '__main__':
     load_checkpoint(checkpoint_file=checkpoint_file, model=model, type='val')
 
     # 单张图片测试
-    prediction_single(image, model)
+    # image = r'E:\AllDateSets\CV\VOC\VOC2007\VOCtrainval_06-Nov-2007\VOCdevkit\VOC2007\JPEGImages\000033.jpg'
+    # prediction_single(image, model)
 
     # 验证集评估
-    # data_path = r'E:\AllDateSets\CV\VOC\VOC2007\VOCtrainval_06-Nov-2007\VOCdevkit\VOC2007'
-    # evaluation_val(data_path, model)
+    data_path = r'E:\AllDateSets\CV\VOC\VOC2007\VOCtrainval_06-Nov-2007\VOCdevkit\VOC2007'
+    evaluation_val(data_path, model)

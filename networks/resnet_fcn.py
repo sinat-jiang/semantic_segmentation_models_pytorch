@@ -52,4 +52,4 @@ if __name__ == '__main__':
     inputs = torch.randn((2, 3, 320, 480))
     model = ResNetFCN(21)
     outputs = model(inputs)
-    print(outputs.size())
+    print(outputs.size())       # torch.Size([2, 21, 320, 480])

@@ -157,8 +157,6 @@ class VOCSegDataset(Dataset):
 
     def denormalize(self, x_hat):
         """逆正则化的过程，主要是保证图片再显示的时候不会出现颜色上的问题"""
-        # mean = [0.485, 0.456, 0.406]
-        # std = [0.229, 0.224, 0.225]
         mean, std = config.MEAN, config.STD
         # 正常的正则化计算过程：x_hat = (x-mean)/std
         # 所以有：x = x_hat*std + mean

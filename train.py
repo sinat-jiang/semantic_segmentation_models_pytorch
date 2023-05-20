@@ -11,7 +11,7 @@ import config
 from networks.fcn import FCN
 from networks.resnet_fcn import ResNetFCN
 from dataset import VOCSegDataset
-from utils import load_checkpoint, save_checkpoint, batch_intersection_union, batch_pix_accuracy, CrossEntropy2d
+from utils import load_checkpoint, save_checkpoint, batch_intersection_union, batch_pix_accuracy, CrossEntropy2d, DiceLoss2d
 
 
 # base for path
@@ -194,6 +194,7 @@ def main():
 
     # 损失函数
     ce_loss_fun = CrossEntropy2d(nclass=len(config.VOC_CLASSES))
+    dice_loss_fun = DiceLoss2d(nclass=len(config.VOC_CLASSES))
 
     # 加载预训练模型
     if config.INIT_EPOCH > 0:
@@ -220,7 +221,7 @@ def main():
             outputs = model(images)
 
             ce_loss = ce_loss_fun.forward(outputs, masks)
-            dice_loss = torch.zeros_like(ce_loss)
+            dice_loss = dice_loss_fun.forward(outputs, mask_labels)
             loss = ce_loss + dice_loss
 
             optimizer.zero_grad()  # loss.backward 之前将梯度清空

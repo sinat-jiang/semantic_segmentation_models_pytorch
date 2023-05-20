@@ -4,6 +4,7 @@
 import torch
 import torch.nn as nn
 import os
+import torch.nn.functional as F
 
 
 def save_checkpoint(model, optimizer, lr_scheduler, filename='my_checkpoint.pth.tar'):
@@ -27,17 +28,13 @@ def load_checkpoint(checkpoint_file, model, optimizer=None, lr_scheduler=None, l
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
 
-        # # if wen don't do this then it will just have learning rate of old checkpoint and it will lead to many hours of debugging
-        # for param_group in optimizer.param_group:
-        #     param_group['lr'] = lr
-
+        # if wen don't do this then it will just have learning rate of old checkpoint and it will lead to many hours of debugging
         print('-' * 90)
         print('optimizer lr:')
         for param_group in optimizer.param_group:
+            param_group['lr'] = lr
             print(param_group['lr'])
         print('-' * 90)
-
-    # return model
 
 
 def batch_pix_accuracy(output, target, ignore_label=None):
@@ -98,7 +95,7 @@ def batch_intersection_union(output, target, nclass, ignore_label=None):
 
 class CrossEntropy2d(nn.Module):
     def __init__(self, nclass, ignore_label=None):
-        super().__init__()
+        super(CrossEntropy2d).__init__()
         self.nclass = nclass
         self.ignore_label = ignore_label
 
@@ -122,73 +119,42 @@ class CrossEntropy2d(nn.Module):
         return ce_loss
 
 
-def Dice_loss(inputs, target, beta=1, smooth=1e-5):
-    """
-    详见：https://blog.csdn.net/Mike_honor/article/details/125871091
-    :param inputs:
-    :param target:
-    :param beta:
-    :param smooth:
-    :return:
-    """
-    n, c, h, w = inputs.size()
-    nt, ht, wt, ct = target.size()
-    if h != ht and w != wt:
-        inputs = F.interpolate(inputs, size=(ht, wt), mode="bilinear", align_corners=True)
+class DiceLoss2d(nn.Module):
+    def __init__(self, nclass):
+        super(DiceLoss2d).__init__()
+        self.nclass = nclass
 
-    temp_inputs = torch.softmax(inputs.transpose(1, 2).transpose(2, 3).contiguous().view(n, -1, c), -1)
-    temp_target = target.view(n, -1, ct)
+    def forward(self, inputs, targets, beta=1, smooth=1e-5):
+        """
+        参考实现：
+            - https://blog.csdn.net/Mike_honor/article/details/125871091（看看公式就好，代码别用了）
+            - https://zhuanlan.zhihu.com/p/420773975
+        :param inputs: 模型预测值
+        :param targets: 真实的 mask label
+        :param beta:
+        :param smooth:
+        :return:
+        """
+        n, c, h, w = inputs.size()
+        nt, ct, ht, wt = targets.size()
+        if h != ht and w != wt:
+            inputs = F.interpolate(inputs, size=(ht, wt), mode="bilinear", align_corners=True)
 
-    # --------------------------------------------#
-    #   计算dice loss
-    # --------------------------------------------#
-    tp = torch.sum(temp_target[..., :-1] * temp_inputs, axis=[0, 1])
-    fp = torch.sum(temp_inputs, axis=[0, 1]) - tp
-    fn = torch.sum(temp_target[..., :-1], axis=[0, 1]) - tp
+        tmp_inputs = torch.softmax(inputs, dim=1).view(n, c, -1)    # (bs, nclass, xxx)
+        tmp_targets = targets.view(nt, ct, -1)                      # (bs, nclass, xxx)
 
-    score = ((1 + beta ** 2) * tp + smooth) / ((1 + beta ** 2) * tp + beta ** 2 * fn + fp + smooth)
-    dice_loss = 1 - torch.mean(score)
-    return dice_loss
+        intersection = torch.sum(tmp_inputs * tmp_targets, dim=1)   # (bs, xxx)   |   |X⋂Y|
+        x = torch.sum(tmp_inputs, dim=1)                            # (bs, xxx)   |   |X|
+        y = torch.sum(tmp_targets, dim=1)                           # (bs, xxx)   |   |Y|
 
+        dice_ = (2 * intersection + smooth) / (x + y + smooth)
+        return 1 - torch.mean(dice_)
 
 
 if __name__ == '__main__':
-    # pa、miou 计算测试
-    torch.manual_seed(12)
-    outputs = torch.rand(size=(2, 3, 4, 4))             # 预测值（通道数为 class 数）
-    target = (torch.rand(size=(2, 4, 4)) * 3).long()    # 真实 mask，只有一个通道
-    print('outputs\n', outputs)
-    # print(torch.argmax(outputs, 1))
-    print('target\n', target)
-
-    print('-' * 90)
-    correct, labeled = batch_pix_accuracy(outputs, target)
-    print(correct, labeled)
-
-    print('-' * 90)
-    inter, union = batch_intersection_union(outputs, target, 3)
-    print(inter, union)
-
-    print('=' * 90)
-    nclass = 3
-    total_inter = torch.zeros(nclass)
-    total_union = torch.zeros(nclass)
-    total_correct = 0
-    total_label = 0
-
-    total_correct += correct
-    total_label += labeled
-    # if total_inter.device != inter.device:
-    #     total_inter = total_inter.to(inter.device)
-    #     total_union = total_union.to(union.device)
-    total_inter += inter
-    total_union += union
-
-    # 计算 pa、miou
-    pixAcc = 1.0 * total_correct / (2.220446049250313e-16 + total_label)  # remove np.spacing(1)
-    IoU = 1.0 * total_inter / (2.220446049250313e-16 + total_union)
-    mIoU = IoU.mean().item()
-    print(pixAcc)
-    print(IoU)
-    print(mIoU)
-
+    # dice 测试
+    inputs = torch.randn((2, 21, 6, 6))
+    targets = torch.rand_like(inputs).round().long()
+    print(inputs)
+    print(targets)
+    dice_loss(inputs, targets)

@@ -6,7 +6,7 @@ BATCH_SIZE = 5
 LR = 1e-4
 
 INIT_EPOCH = 0
-NUM_EPOCHS = 36
+NUM_EPOCHS = 50
 EVAL_EPOCH = 2
 SAVE_EPOCH = 2
 
@@ -34,8 +34,8 @@ NUM_WORKERS = 2
 DICE_LOSS_WEIGHT = 1.0
 
 # data params
-DATA_PATH = r'E:\AllDateSets\CV\VOC\VOC2007\VOCtrainval_06-Nov-2007\VOCdevkit\VOC2007'
-# DATA_PATH = r'E:\AllDateSets\CV\VOC\VOCtrainval_11-May-2012\VOCdevkit\VOC2012'
+# DATA_PATH = r'E:\AllDateSets\CV\VOC\VOC2007\VOCtrainval_06-Nov-2007\VOCdevkit\VOC2007'
+DATA_PATH = r'E:\AllDateSets\CV\VOC\VOCtrainval_11-May-2012\VOCdevkit\VOC2012'
 # 标签其标注的类别
 VOC_CLASSES = ['background', 'aeroplane', 'bicycle', 'bird', 'boat',
                'bottle', 'bus', 'car', 'cat', 'chair', 'cow',
