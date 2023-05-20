@@ -19,17 +19,19 @@ MOMENTUM = 0.9
 
 SCHEDULER = 'mslr'      # mslr, slr, ...
 # for MultiStepLR
-LR_STEPS = [500, 700, 900]
+LR_STEPS = [50, 90, 120]
 LR_GAMMA_MSLR = 0.1
 # for StepLR
 LR_STEP_SIZE = 3         # 每多少个 epoch 降低一次学习率
 LR_GAMMA_SLR = 0.1  # 学习率下降步幅
 
-# LOAD_MODEL = False      # 初始训练时指定为 False
-# SAVE_MODEL = True
+# model params
 BEST_MODEL = 'best_epoch_weights.pth'
 LATEST_MODEL = 'latest_epoch_weights.pth'
 NUM_WORKERS = 2
+
+# loss params
+DICE_LOSS_WEIGHT = 1.0
 
 # data params
 DATA_PATH = r'E:\AllDateSets\CV\VOC\VOC2007\VOCtrainval_06-Nov-2007\VOCdevkit\VOC2007'

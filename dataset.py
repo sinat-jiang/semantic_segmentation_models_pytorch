@@ -212,7 +212,8 @@ if __name__ == '__main__':
 
         plt.subplot(3, 5, step+1)
         # 反向 norm
-        image[0] = dataset.denormalize(image[0])
+        image = dataset.denormalize(image)
+        # image[0] = dataset.denormalize(image[0])
         print(image[0][:, 100:110, 130:140])        # 0-1 之间的值
         plt.imshow(image[0].numpy().transpose(1, 2, 0))
         plt.subplot(3, 5, 5 + step + 1)
